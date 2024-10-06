@@ -1,101 +1,115 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState } from 'react'
+import { Search, Upload, Image as ImageIcon } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import UploadModal from '@/components/UploadModal'
+
+interface Image {
+  id: number;
+  src: string;
+  tags: string[];
+}
+
+export default function ImageManager() {
+  const [images, setImages] = useState<Image[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+
+  const allTags = Array.from(new Set(images.flatMap(img => img.tags)))
+
+  const filteredImages = images.filter(img => 
+    (searchTerm === '' || img.tags.some(tag => tag.includes(searchTerm))) &&
+    (selectedTags.length === 0 || selectedTags.every(tag => img.tags.includes(tag)))
+  )
+
+  const handleTagClick = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    )
+  }
+
+  const handleUpload = ({ fileName, tags }: { fileName: string; tags: string[] }) => {
+    const newImage: Image = {
+      id: images.length + 1,
+      src: `/uploads/${fileName}`,
+      tags: tags
+    }
+    setImages([...images, newImage])
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <div className="min-h-screen bg-white text-gray-900">
+      <div className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-6">个人图片管理</h1>
+        
+        <div className="flex items-center mb-6 space-x-4">
+          <div className="relative flex-grow">
+            <Input
+              type="text"
+              placeholder="搜索标签..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-full border-gray-300"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          </div>
+          <Button className="rounded-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setIsUploadModalOpen(true)}>
+            <Upload className="mr-2" size={20} />
+            上传图片
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">标签筛选：</h2>
+          <div className="flex flex-wrap gap-2">
+            {allTags.map(tag => (
+              <Badge 
+                key={tag} 
+                variant={selectedTags.includes(tag) ? "default" : "outline"}
+                className={`cursor-pointer rounded-full ${
+                  selectedTags.includes(tag) 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+                onClick={() => handleTagClick(tag)}
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredImages.map(img => (
+            <div key={img.id} className="relative group">
+              <img src={img.src} alt="" className="w-full h-48 object-cover rounded-lg" />
+              <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-center justify-center">
+                <div className="text-white text-center">
+                  <ImageIcon size={24} className="mx-auto mb-2" />
+                  <div className="flex flex-wrap justify-center gap-1">
+                    {img.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="rounded-full text-xs bg-white text-gray-800">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {isUploadModalOpen && (
+          <UploadModal
+            onClose={() => setIsUploadModalOpen(false)}
+            onUpload={handleUpload}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        )}
+      </div>
     </div>
-  );
+  )
 }
