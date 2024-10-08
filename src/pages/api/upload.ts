@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { IncomingForm, Fields, Files, File } from 'formidable'
-import path from 'path'
+import formidable from 'formidable'
 import fs from 'fs/promises'
-import { v4 as uuidv4 } from 'uuid'
+import path from 'path'
 
 export const config = {
   api: {
@@ -14,78 +13,51 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('Received upload request')
-
   if (req.method !== 'POST') {
-    console.log('Method not allowed:', req.method)
-    return res.status(405).json({ message: 'Method not allowed' })
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
     const uploadDir = path.join(process.cwd(), 'public/uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
-    console.log('Upload directory:', uploadDir)
-
-    const form = new IncomingForm({
-      uploadDir,
+    const form = formidable({
+      uploadDir: uploadDir,
       keepExtensions: true,
-      multiples: false,
+      maxFileSize: 5 * 1024 * 1024, // 5MB
     })
 
-    console.log('Parsing form data...')
-    const [fields, files] = await new Promise<[Fields, Files]>((resolve, reject) => {
+    const [, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) {
-          console.error('Form parsing error:', err)
-          reject(err)
-        }
-        console.log('Form parsed successfully')
-        console.log('Fields:', fields)
-        console.log('Files:', files)
+        if (err) reject(err)
         resolve([fields, files])
       })
     })
 
-    const uploadedFile = files.file
-    if (!uploadedFile) {
-      console.log('No file uploaded')
-      return res.status(400).json({ message: 'No file uploaded' })
+    const fileArray = files.file
+    if (!fileArray || fileArray.length === 0) {
+      return res.status(400).json({ error: 'No file uploaded' })
     }
 
-    const file = Array.isArray(uploadedFile) ? uploadedFile[0] : uploadedFile
-    if (!file.filepath) {
-      console.log('File path is missing')
-      return res.status(400).json({ message: 'File path is missing' })
-    }
+    const file = Array.isArray(fileArray) ? fileArray[0] : fileArray
 
-    console.log('File received:', file.originalFilename)
-
-    const fileExtension = path.extname(file.originalFilename || '').toLowerCase()
-    if (fileExtension !== '.jpg' && fileExtension !== '.jpeg' && fileExtension !== '.png' && fileExtension !== '.pdf') {
-      console.log('Invalid file type')
-      return res.status(400).json({ message: 'Invalid file type. Only JPG, PNG, and PDF files are allowed.' })
-    }
-
-    const fileName = `${uuidv4()}${fileExtension}`
+    const oldPath = file.filepath
+    const fileName = file.originalFilename || 'unnamed_file'
     const newPath = path.join(uploadDir, fileName)
 
-    console.log('Renaming file to:', newPath)
-    await fs.rename(file.filepath, newPath)
+    await fs.rename(oldPath, newPath)
 
-    const tags = fields.tags ? (Array.isArray(fields.tags) ? fields.tags : [fields.tags]) : []
-    console.log('Tags:', tags)
+    const fileUrl = `/uploads/${fileName}`
 
-    const fileType = fileExtension === '.pdf' ? 'pdf' : 'image'
-
-    console.log('Upload successful')
     return res.status(200).json({ 
       message: 'File uploaded successfully',
-      fileName,
-      fileType,
-      tags
+      file: {
+        name: fileName,
+        url: fileUrl,
+        type: file.mimetype,
+        size: file.size,
+      }
     })
   } catch (error) {
     console.error('Upload error:', error)
-    return res.status(500).json({ message: 'Internal server error', error: (error as Error).message })
+    return res.status(500).json({ error: 'Error uploading file' })
   }
 }
