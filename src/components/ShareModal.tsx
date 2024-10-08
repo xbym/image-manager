@@ -25,7 +25,7 @@ export default function ShareModal({ file, onClose }: ShareModalProps) {
       await navigator.clipboard.writeText(shareUrl)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {
+    } catch (err) {
       setError('Failed to copy link. Please try again.')
     }
   }
@@ -38,8 +38,8 @@ export default function ShareModal({ file, onClose }: ShareModalProps) {
           text: `Check out this ${file.type}!`,
           url: shareUrl
         })
-      } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
           setError('Failed to share. Please try copying the link instead.')
         }
       }
@@ -49,7 +49,7 @@ export default function ShareModal({ file, onClose }: ShareModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black  bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">分享 {file.title || file.type}</h2>

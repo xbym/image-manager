@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -18,6 +18,7 @@ interface SidebarTagsProps {
 export default function SidebarTags({ tags, onTagSelect, selectedTags }: SidebarTagsProps) {
   const [expandedTags, setExpandedTags] = useState<string[]>([])
   const [newTagName, setNewTagName] = useState('')
+  const [editingTagId, setEditingTagId] = useState<string | null>(null)
 
   const toggleExpand = (tagId: string) => {
     setExpandedTags(prev =>
@@ -60,11 +61,9 @@ export default function SidebarTags({ tags, onTagSelect, selectedTags }: Sidebar
   )
 
   const addNewTag = () => {
-    if (newTagName.trim()) {
-      // 这里应该调用一个函数来添加新标签到数据库或状态
-      console.log('Adding new tag:', newTagName)
-      setNewTagName('')
-    }
+    // 这里应该调用一个函数来添加新标签到数据库或状态
+    console.log('Adding new tag:', newTagName)
+    setNewTagName('')
   }
 
   return (
