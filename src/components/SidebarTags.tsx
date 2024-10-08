@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Plus, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -18,7 +18,6 @@ interface SidebarTagsProps {
 export default function SidebarTags({ tags, onTagSelect, selectedTags }: SidebarTagsProps) {
   const [expandedTags, setExpandedTags] = useState<string[]>([])
   const [newTagName, setNewTagName] = useState('')
-  const [editingTagId, setEditingTagId] = useState<string | null>(null)
 
   const toggleExpand = (tagId: string) => {
     setExpandedTags(prev =>

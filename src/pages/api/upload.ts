@@ -1,5 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import { IncomingForm, Fields, Files, File } from 'formidable'
+import { NextApiRequest, NextApiResponse } from 'next'
+import { IncomingForm, Fields, Files } from 'formidable'
 import path from 'path'
 import fs from 'fs/promises'
 import { v4 as uuidv4 } from 'uuid'

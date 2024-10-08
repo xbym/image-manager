@@ -3,6 +3,7 @@ import { X, Share2, Download, Plus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import Image from 'next/image'
 import SidebarTags from './SidebarTags'
 
 interface Tag {
@@ -79,7 +80,7 @@ export default function FileDetailModal({
           </div>
           <div className="mb-4">
             {file.type === 'image' ? (
-              <img src={file.src} alt={file.title} className="w-full h-auto rounded-lg" />
+              <Image src={file.src} alt={file.title || ''} width={800} height={600} className="w-full h-auto rounded-lg" />
             ) : file.type === 'pdf' ? (
               <iframe src={file.src} title={file.title} className="w-full h-96 rounded-lg" />
             ) : (

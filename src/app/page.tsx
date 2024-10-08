@@ -9,6 +9,7 @@ import UploadModal from '@/components/UploadModal'
 import FileDetailModal from '@/components/FileDetailModal'
 import WebpageSaveModal from '@/components/WebpageSaveModal'
 import ShareModal from '@/components/ShareModal'
+import Image from 'next/image'
 
 interface Tag {
   id: string;
@@ -180,7 +181,7 @@ export default function FileManager() {
             {filteredFiles.map(file => (
               <div key={file.id} className="relative group cursor-pointer" onClick={() => handleFileClick(file)}>
                 {file.type === 'image' ? (
-                  <img src={file.src} alt="" className="w-full h-48 object-cover rounded-lg" />
+                  <Image src={file.src} alt="" width={300} height={192} className="w-full h-48 object-cover rounded-lg" />
                 ) : file.type === 'pdf' ? (
                   <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center">
                     <FileText size={48} className="text-gray-400" />
@@ -232,7 +233,7 @@ export default function FileManager() {
           </div>
         ) : (
           <div className="text-center py-10">
-            <p className="text-xl text-gray-500">还没有上传任何文件或保存任何网页链接。点击"上传文件"或"保存网页链接"按钮开始添加内容。</p>
+            <p className="text-xl text-gray-500">还没有上传任何文件或保存任何网页链接。点击&quot;上传文件&quot;或&quot;保存网页链接&quot;按钮开始添加内容。</p>
           </div>
         )}
 
