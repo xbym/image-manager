@@ -18,17 +18,27 @@ export default async function handler(
   }
 
   try {
-    const uploadDir = path.join(process.cwd(), 'public/uploads')
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+    await fs.mkdir(uploadDir, { recursive: true })
+
     const form = formidable({
       uploadDir: uploadDir,
       keepExtensions: true,
-      maxFileSize: 5 * 1024 * 1024, // 5MB
+      maxFileSize: 50 * 1024 * 1024, // 50MB
+      maxTotalFileSize: 50 * 1024 * 1024, // 50MB
     })
 
     const [, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) reject(err)
-        resolve([fields, files])
+        if (err) {
+          if (err.code === 1009) {
+            reject(new Error('File size limit exceeded. Maximum file size is 50MB.'))
+          } else {
+            reject(err)
+          }
+        } else {
+          resolve([fields, files])
+        }
       })
     })
 
@@ -39,12 +49,7 @@ export default async function handler(
 
     const file = Array.isArray(fileArray) ? fileArray[0] : fileArray
 
-    const oldPath = file.filepath
     const fileName = file.originalFilename || 'unnamed_file'
-    const newPath = path.join(uploadDir, fileName)
-
-    await fs.rename(oldPath, newPath)
-
     const fileUrl = `/uploads/${fileName}`
 
     return res.status(200).json({ 
@@ -58,6 +63,10 @@ export default async function handler(
     })
   } catch (error) {
     console.error('Upload error:', error)
-    return res.status(500).json({ error: 'Error uploading file' })
+    if (error instanceof Error) {
+      return res.status(413).json({ error: error.message })
+    } else {
+      return res.status(500).json({ error: 'An unexpected error occurred during file upload' })
+    }
   }
 }

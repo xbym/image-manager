@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import Image from 'next/image'
 import { X, Share2, Download, Plus } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import SidebarTags from './SidebarTags'
+import Image from 'next/image'
 
 interface Tag {
   id: string;
@@ -80,12 +80,12 @@ export default function FileDetailModal({
           </div>
           <div className="mb-4">
             {file.type === 'image' ? (
-              <Image 
-                src={file.src} 
+              <Image
+                src={file.src}
                 alt={file.title || ''}
                 width={800}
                 height={600}
-                className="w-full h-auto rounded-lg object-cover"
+                className="w-full h-auto rounded-lg"
               />
             ) : file.type === 'pdf' ? (
               <iframe src={file.src} title={file.title} className="w-full h-96 rounded-lg" />
