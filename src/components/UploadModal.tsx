@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { X, Upload } from 'lucide-react'
+import { X, Upload, FileIcon } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 
 interface UploadModalProps {
   onClose: () => void;
-  onUpload: (data: { fileName: string; tags: string[] }) => void;
+  onUpload: (data: { fileName: string; fileType: string; tags: string[] }) => void;
 }
 
 export default function UploadModal({ onClose, onUpload }: UploadModalProps) {
@@ -36,7 +36,7 @@ export default function UploadModal({ onClose, onUpload }: UploadModalProps) {
     if (selectedFile) {
       setIsUploading(true)
       const formData = new FormData()
-      formData.append('image', selectedFile)
+      formData.append('file', selectedFile)
       tags.forEach(tag => formData.append('tags', tag))
 
       try {
@@ -51,7 +51,7 @@ export default function UploadModal({ onClose, onUpload }: UploadModalProps) {
         }
 
         const data = await response.json()
-        onUpload({ fileName: data.fileName, tags: data.tags })
+        onUpload({ fileName: data.fileName, fileType: data.fileType, tags: data.tags })
         onClose()
       } catch (error) {
         console.error('Upload error:', error)
@@ -66,12 +66,12 @@ export default function UploadModal({ onClose, onUpload }: UploadModalProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-96 shadow-xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900">上传图片</h2>
+          <h2 className="text-xl font-bold text-gray-900">上传文件</h2>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full text-gray-500 hover:text-gray-700">
             <X size={24} />
           </Button>
         </div>
-        <Input type="file" onChange={handleFileChange} className="mb-4 border-gray-300" accept="image/*" />
+        <Input type="file" onChange={handleFileChange} className="mb-4 border-gray-300" accept="image/*,.pdf" />
         <div className="flex mb-2">
           <Input
             type="text"

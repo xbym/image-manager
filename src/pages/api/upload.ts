@@ -46,13 +46,13 @@ export default async function handler(
       })
     })
 
-    const imageFile = files.image
-    if (!imageFile) {
+    const uploadedFile = files.file
+    if (!uploadedFile) {
       console.log('No file uploaded')
       return res.status(400).json({ message: 'No file uploaded' })
     }
 
-    const file = Array.isArray(imageFile) ? imageFile[0] : imageFile
+    const file = Array.isArray(uploadedFile) ? uploadedFile[0] : uploadedFile
     if (!file.filepath) {
       console.log('File path is missing')
       return res.status(400).json({ message: 'File path is missing' })
@@ -60,7 +60,13 @@ export default async function handler(
 
     console.log('File received:', file.originalFilename)
 
-    const fileName = `${uuidv4()}${path.extname(file.originalFilename || '')}`
+    const fileExtension = path.extname(file.originalFilename || '').toLowerCase()
+    if (fileExtension !== '.jpg' && fileExtension !== '.jpeg' && fileExtension !== '.png' && fileExtension !== '.pdf') {
+      console.log('Invalid file type')
+      return res.status(400).json({ message: 'Invalid file type. Only JPG, PNG, and PDF files are allowed.' })
+    }
+
+    const fileName = `${uuidv4()}${fileExtension}`
     const newPath = path.join(uploadDir, fileName)
 
     console.log('Renaming file to:', newPath)
@@ -69,10 +75,13 @@ export default async function handler(
     const tags = fields.tags ? (Array.isArray(fields.tags) ? fields.tags : [fields.tags]) : []
     console.log('Tags:', tags)
 
+    const fileType = fileExtension === '.pdf' ? 'pdf' : 'image'
+
     console.log('Upload successful')
     return res.status(200).json({ 
       message: 'File uploaded successfully',
       fileName,
+      fileType,
       tags
     })
   } catch (error) {
