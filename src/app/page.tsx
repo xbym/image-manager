@@ -104,7 +104,7 @@ export default function FileManager() {
     e.stopPropagation()
     if (file.type === 'image' || file.type === 'pdf') {
       const link = document.createElement('a')
-      link.href = file.src
+      link.href = `${file.src}?download=true`
       link.download = file.title || `file.${file.type}`
       document.body.appendChild(link)
       link.click()

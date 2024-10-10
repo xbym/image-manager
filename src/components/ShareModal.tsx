@@ -18,7 +18,8 @@ export default function ShareModal({ file, onClose }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const shareUrl = `${window.location.origin}/share/${file.id}`
+  // 更新 shareUrl 生成方式
+  const shareUrl = `${window.location.origin}/api/file/${file.id}`
 
   const handleCopy = async () => {
     try {

@@ -1,8 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { IncomingForm, Fields, Files } from 'formidable'
-import path from 'path'
-import fs from 'fs/promises'
+import { IncomingForm, Fields, Files, File } from 'formidable'
 import { v4 as uuidv4 } from 'uuid'
+import clientPromise from '../../lib/mongodb'
+import fs from 'fs'
+import { GridFSBucket } from 'mongodb'
 
 export const config = {
   api: {
@@ -14,75 +15,68 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('Received upload request')
-
   if (req.method !== 'POST') {
-    console.log('Method not allowed:', req.method)
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
   try {
-    const uploadDir = path.join(process.cwd(), 'public/uploads')
-    await fs.mkdir(uploadDir, { recursive: true })
-    console.log('Upload directory:', uploadDir)
-
     const form = new IncomingForm({
-      uploadDir,
-      keepExtensions: true,
-      multiples: false,
+      maxFileSize: 200 * 1024 * 1024, // 200MB max file size
     })
-
-    console.log('Parsing form data...')
-    const [fields, files] = await new Promise<[Fields, Files]>((resolve, reject) => {
+    const [fields, files]: [Fields, Files] = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
-        if (err) {
-          console.error('Form parsing error:', err)
-          reject(err)
-        }
-        console.log('Form parsed successfully')
-        console.log('Fields:', fields)
-        console.log('Files:', files)
+        if (err) reject(err)
         resolve([fields, files])
       })
     })
 
     const uploadedFile = files.file
     if (!uploadedFile) {
-      console.log('No file uploaded')
       return res.status(400).json({ message: 'No file uploaded' })
     }
 
-    const file = Array.isArray(uploadedFile) ? uploadedFile[0] : uploadedFile
+    const file: File = Array.isArray(uploadedFile) ? uploadedFile[0] : uploadedFile
+
     if (!file.filepath) {
-      console.log('File path is missing')
       return res.status(400).json({ message: 'File path is missing' })
     }
 
-    console.log('File received:', file.originalFilename)
-
-    const fileExtension = path.extname(file.originalFilename || '').toLowerCase()
-    if (fileExtension !== '.jpg' && fileExtension !== '.jpeg' && fileExtension !== '.png' && fileExtension !== '.pdf') {
-      console.log('Invalid file type')
+    const fileExtension = file.originalFilename ? file.originalFilename.split('.').pop()?.toLowerCase() : ''
+    if (!fileExtension || !['jpg', 'jpeg', 'png', 'pdf'].includes(fileExtension)) {
       return res.status(400).json({ message: 'Invalid file type. Only JPG, PNG, and PDF files are allowed.' })
     }
 
-    const fileName = `${uuidv4()}${fileExtension}`
-    const newPath = path.join(uploadDir, fileName)
+    const fileName = `${uuidv4()}.${fileExtension}`
+    const fileType = fileExtension === 'pdf' ? 'pdf' : 'image'
 
-    console.log('Renaming file to:', newPath)
-    await fs.rename(file.filepath, newPath)
+    // Connect to MongoDB
+    const client = await clientPromise
+    const db = client.db('your_database_name')
 
-    const tags = fields.tags ? (Array.isArray(fields.tags) ? fields.tags : [fields.tags]) : []
-    console.log('Tags:', tags)
+    // Use GridFS for all files
+    const bucket = new GridFSBucket(db)
+    const uploadStream = bucket.openUploadStream(fileName, {
+      metadata: {
+        fileType,
+        tags: Array.isArray(fields.tags) ? fields.tags : [fields.tags],
+      }
+    })
 
-    const fileType = fileExtension === '.pdf' ? 'pdf' : 'image'
+    await new Promise<void>((resolve, reject) => {
+      const readStream = fs.createReadStream(file.filepath)
+      readStream.pipe(uploadStream)
+        .on('error', reject)
+        .on('finish', resolve)
+    })
 
-    console.log('Upload successful')
+    const fileId = uploadStream.id
+
     return res.status(200).json({ 
       message: 'File uploaded successfully',
       fileName,
       fileType,
-      tags
+      fileId: fileId.toString(),
+      tags: fields.tags
     })
   } catch (error) {
     console.error('Upload error:', error)
